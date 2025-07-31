@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35931.197
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.Presentation", "1.Presentation", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2.Service", "2.Service", "{1044A04C-2D3F-4B9F-A157-4CD178128341}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.Data", "3.Data", "{84590D47-1AA6-4D70-BE4E-A120D130FC3A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FigureGear.Data", "FigureGear.Data\FigureGear.Data.csproj", "{8F9489A1-6991-44C4-9AD7-BA034D28A150}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FigureGear.Service", "FigureGear.Service\FigureGear.Service.csproj", "{3A4C2167-B184-4C6F-8618-13D3E144FAAE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FigureGear.API", "FigureGear.API\FigureGear.API.csproj", "{DF06BC30-C398-4103-9072-E96C5036BB2E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8F9489A1-6991-44C4-9AD7-BA034D28A150}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F9489A1-6991-44C4-9AD7-BA034D28A150}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F9489A1-6991-44C4-9AD7-BA034D28A150}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F9489A1-6991-44C4-9AD7-BA034D28A150}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A4C2167-B184-4C6F-8618-13D3E144FAAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A4C2167-B184-4C6F-8618-13D3E144FAAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A4C2167-B184-4C6F-8618-13D3E144FAAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A4C2167-B184-4C6F-8618-13D3E144FAAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF06BC30-C398-4103-9072-E96C5036BB2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF06BC30-C398-4103-9072-E96C5036BB2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF06BC30-C398-4103-9072-E96C5036BB2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF06BC30-C398-4103-9072-E96C5036BB2E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8F9489A1-6991-44C4-9AD7-BA034D28A150} = {84590D47-1AA6-4D70-BE4E-A120D130FC3A}
+		{3A4C2167-B184-4C6F-8618-13D3E144FAAE} = {1044A04C-2D3F-4B9F-A157-4CD178128341}
+		{DF06BC30-C398-4103-9072-E96C5036BB2E} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {20E11B31-8D5D-45A8-AFB2-850C01D3D63C}
+	EndGlobalSection
+EndGlobal

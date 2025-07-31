@@ -1,0 +1,65 @@
+﻿using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
+using FigureGear.API.Configurations;
+using FigureGear.Data.Context;
+using Microsoft.EntityFrameworkCore;
+
+namespace FigureGearBE
+{
+    public class Startup
+    {
+        public IConfiguration Configuration { get; }
+
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddControllers();
+            services.AddAuthorization();
+            services.AddDbContext<FigureGearDbContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
+            services.RegisterValidators();
+
+            services.AddApiVersioning(options =>
+            {
+                options.ReportApiVersions = true;
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+            })
+            .AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+            });
+
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
+        }
+
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI(options =>
+                {
+                    foreach (var description in provider.ApiVersionDescriptions)
+                    {
+                        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+                    }
+                });
+            }
+
+            app.UseRouting();
+            app.UseAuthorization();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+        }
+    }
+}
