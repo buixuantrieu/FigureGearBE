@@ -1,24 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FigureGear.Data.Domain
+﻿namespace FigureGear.Data.Domain
 {
     public class User
     {
-        [Key]
-        public Guid id { get; set; }
+        public Guid Id { get; set; }
+
         public string UserName { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public DateTime? LastLogin { get; set; }
-        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
-        public DateTime UpdateDate { get; set; } = DateTime.UtcNow;
-        public string? RefreshToken { get; set; }
-        public DateTime RefreshTokenExpiryTime { get; set; }
-        public bool IsActive { get; set; } = false;
+
+        public string Email { get; set; } = string.Empty;
+
+        public string SecurityStamp { get; set; } = Guid.NewGuid().ToString();
+
+        public string PasswordHash { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
+
         public bool IsDeleted { get; set; } = false;
+
+        public bool EmailConfirmed { get; set; } = false;
+
+        public int FailedLoginCount { get; set; } = 0;
+
+        public DateTime? LockoutEnd { get; set; }
+
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+        public DateTime? LastLoginDate { get; set; }
+
+        public DateTime? UpdatedDate { get; set; }
+
+        public string? RefreshToken { get; set; }
+
+        public DateTime? RefreshTokenExpiryTime { get; set; }
     }
 }

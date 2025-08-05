@@ -1,7 +1,9 @@
 ﻿using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using FigureGear.API.Configurations;
+using FigureGear.API.Services.Email;
 using FigureGear.Data.Context;
+using FigureGear.Service.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace FigureGearBE
@@ -23,6 +25,11 @@ namespace FigureGearBE
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
             services.RegisterValidators();
+            services.RegisterService();
+            services.Configure<JWTSettings>(Configuration.GetSection("JWT"));
+            services.Configure<EmailSettings>(Configuration.GetSection("EmailSettings"));
+
+            services.AddAutoMapper(typeof(AutoMapperProfile));
 
             services.AddApiVersioning(options =>
             {
