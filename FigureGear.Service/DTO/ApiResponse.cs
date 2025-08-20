@@ -4,7 +4,6 @@
     public string? Message { get; set; }
     public T? Data { get; set; }
 
-    // Constructor mặc định để hỗ trợ object initializer
     public ApiResponse() { }
 
     public ApiResponse(bool success, string? message = null, T? data = default)

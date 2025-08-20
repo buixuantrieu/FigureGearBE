@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using Microsoft.Extensions.Configuration;
 using BCrypt.Net;
+using FigureGear.Service.Helpers;
 
 namespace FigureGear.Service.Implementation
 {
@@ -18,6 +19,7 @@ namespace FigureGear.Service.Implementation
         private readonly ITokenService _tokenService;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
+
         public UserService(FigureGearDbContext dbContext, IMapper mapper, ITokenService tokenService, IConfiguration configuration, IEmailService emailService) : base(dbContext)
         {
             _mapper = mapper;
@@ -28,31 +30,39 @@ namespace FigureGear.Service.Implementation
 
         public async Task<ApiResponse<object>> RegisterAsync(UserModel model)
         {
-
             var user = _mapper.Map<User>(model)!;
 
             user.Id = Guid.NewGuid();
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
 
-            var userIdEncrypt = Utils.Encrypt(user.Id.ToString()); 
-
+            var userIdEncrypt = Utils.Encrypt(user.Id.ToString());
+            var defaultRole = await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == RoleNames.User);
+            if (defaultRole == null) {
+                throw new Exception("Default role not found");
+            }
+            user.UserRoles.Add(new UserRole
+            {
+                UserId = user.Id,
+                RoleId = defaultRole.Id
+            });
             _dbContext.Users.Add(user);
             await _dbContext.SaveChangesAsync();
 
-            var confirmLink = $"{_configuration["AppSettings:ClientUrl"]}/confirm-email?token={userIdEncrypt}";
-            var emailBody = $@"
-        <h2>Chào mừng đến với FigureGear!</h2>
-        <p>Hãy nhấn vào liên kết bên dưới để xác thực tài khoản:</p>
-        <a href='{confirmLink}'>Xác thực tài khoản</a>
-    ";
+            var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "Email", "ActivationEmailTemplate.html");
+            var emailTemplate = await File.ReadAllTextAsync(templatePath);
+            emailTemplate = emailTemplate
+                      .Replace("{{logoUrl}}", "https://firebasestorage.googleapis.com/v0/b/sdsd-f6fec.appspot.com/o/images%2FLogo.png?alt=media&token=bd150de3-94be-4c84-b177-0f799f6dd955")
+                      .Replace("{{confirmLink}}", $"{_configuration["AppSettings:ClientUrl"]}/auth/confirm-email?token={userIdEncrypt}")
+                      .Replace("{{currentYear}}", DateTime.Now.Year.ToString());
+            await _emailService.SendEmailAsync(model.Email, "Xác thực tài khoản FigureGear Store", emailTemplate);
 
-            await _emailService.SendEmailAsync(model.Email, "Xác thực tài khoản FigureGear", emailBody);
             return new ApiResponse<object>
             {
                 Success = true,
                 Message = "Registered successfully"
             };
         }
+
 
         public async Task<AuthResponse> ConfirmEmailAsync(string token)
         {

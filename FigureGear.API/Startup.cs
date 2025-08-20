@@ -6,7 +6,7 @@ using FigureGear.Data.Context;
 using FigureGear.Service.Helpers;
 using Microsoft.EntityFrameworkCore;
 
-namespace FigureGearBE
+namespace FigureGearBE.API
 {
     public class Startup
     {
@@ -20,6 +20,15 @@ namespace FigureGearBE
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
+            });
             services.AddAuthorization();
             services.AddDbContext<FigureGearDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
@@ -60,7 +69,7 @@ namespace FigureGearBE
                     }
                 });
             }
-
+            app.UseCors("AllowAll");
             app.UseRouting();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
