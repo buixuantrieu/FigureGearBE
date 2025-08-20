@@ -8,10 +8,11 @@ namespace FigureGear.API.Services.Email
     public class EmailService : IEmailService
     {
         private readonly EmailSettings _settings;
-
-        public EmailService(IOptions<EmailSettings> settings)
+        private readonly IWebHostEnvironment _webHostEnvironment;
+        public EmailService(IOptions<EmailSettings> settings, IWebHostEnvironment webHostEnvironment)
         {
             _settings = settings.Value;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string bodyHtml)

@@ -1,10 +1,141 @@
-﻿<!DOCTYPE html>
-<html>
+﻿<!doctype html>
+<html lang="vi">
 <head>
-    <meta charset="utf-8" />
-    <title></title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác thực email - Figure Gear Store</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        img {
+            border: 0;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        .wrapper {
+            width: 100%;
+            background-color: #000000;
+            padding: 40px 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+        }
+
+        .logo {
+            margin-bottom: 60px;
+        }
+
+        .h1 {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 8px;
+            color: #ffffff;
+        }
+
+        .lead {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 16px;
+            margin: 0 0 24px;
+            color: #dddddd;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 6px;
+            border: 1px solid #ffffff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .btn--primary {
+            background-color: transparent;
+            color: #ffffff;
+        }
+
+        .small {
+            font-size: 12px;
+            color: #aaaaaa;
+            margin-top: 20px;
+        }
+
+        /* Mobile adjustments */
+        @media only screen and (max-width:480px) {
+            .card {
+                padding: 24px;
+            }
+
+            .h1 {
+                font-size: 20px;
+            }
+
+            .lead {
+                font-size: 15px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <center class="wrapper">
+        <table class="container" role="presentation" width="100%">
+            <tr>
+                <td>
+                    <table role="presentation" width="100%" class="card">
+                        <tr>
+                            <td class="logo">
+                                <img src="{{logoUrl}}" alt="Figure Gear Store" width="140" style="display:block;margin-bottom:40px">
+                            </td>
+                        </tr>
 
+                        <tr>
+                            <td style="text-align:center; padding:0 20px 0 20px;">
+                                <h1 class="h1">Figure Gear Store</h1>
+                                <p class="lead">Cảm ơn bạn đã đăng ký. Vui lòng xác thực email để kích hoạt tài khoản của bạn.</p>
+
+                                <!-- Button -->
+                                <p style="margin:28px 0 0 0;">
+                                    <a href="{{confirmLink}}" class="btn btn--primary" target="_blank" rel="noreferrer noopener">Xác thực tài khoản</a>
+                                </p>
+
+                                <!-- Fallback link -->
+                                <p class="small">Nếu nút trên không hoạt động, hãy sao chép và dán liên kết sau vào trình duyệt của bạn:</p>
+                                <p class="small"><a href="{{confirmLink}}" style="color:#ffffff; word-break:break-all;">{{confirmLink}}</a></p>
+
+                                <p class="small">Nếu bạn không yêu cầu đăng ký này, hãy bỏ qua email này.</p>
+
+                                <p style="margin-top:28px; color:#bbbbbb; font-size:13px;">© {{currentYear}} Figure Gear Store. All rights reserved.</p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </center>
 </body>
 </html>

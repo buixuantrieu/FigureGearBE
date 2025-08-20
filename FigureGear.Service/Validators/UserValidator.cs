@@ -25,7 +25,7 @@ namespace FigureGear.Service.Validators
 
             RuleFor(x => x.Password)
                 .NotEmpty().WithMessage("password is required")
-                .MaximumLength(100).WithMessage("password must not exceed 100 characters");
+                .MaximumLength(100).WithMessage("password must not exceed 50 characters");
         }
     }
 }

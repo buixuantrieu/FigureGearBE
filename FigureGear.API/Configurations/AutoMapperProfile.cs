@@ -7,7 +7,6 @@ namespace FigureGear.API.Configurations
     public class AutoMapperProfile:Profile
     {
         public AutoMapperProfile() {
-
             CreateMap<UserModel, User>();
         }
     }

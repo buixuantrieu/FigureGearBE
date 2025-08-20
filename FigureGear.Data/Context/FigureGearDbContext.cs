@@ -14,6 +14,8 @@ namespace FigureGear.Data.Context
         }
 
         public DbSet<User> Users { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -73,6 +75,19 @@ namespace FigureGear.Data.Context
                 builder.HasIndex(x => x.UserName).IsUnique();
 
                 builder.HasIndex(x => x.Email).IsUnique();
+            });
+
+            modelBuilder.Entity<UserRole>(builder =>
+            {
+                builder.HasKey(ur => new { ur.UserId, ur.RoleId });
+
+                builder.HasOne(ur => ur.User)
+                       .WithMany(u => u.UserRoles)
+                       .HasForeignKey(ur => ur.UserId);
+
+                builder.HasOne(ur => ur.Role)
+                       .WithMany(r => r.UserRoles)
+                       .HasForeignKey(ur => ur.RoleId);
             });
 
         }
