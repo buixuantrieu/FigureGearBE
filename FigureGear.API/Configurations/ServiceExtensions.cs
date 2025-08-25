@@ -11,6 +11,7 @@ namespace FigureGear.API.Configurations
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
             return services;
         }
     }

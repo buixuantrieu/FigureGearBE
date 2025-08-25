@@ -1,14 +1,12 @@
 ﻿using System.Security.Claims;
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using FigureGear.Data.Context;
 using FigureGear.Data.Domain;
-using FigureGear.Service.DTO;
 using FigureGear.Service.Interface;
 using FigureGear.Service.Models;
 using FigureGear.Service.Shared;
-using Microsoft.EntityFrameworkCore;
-using AutoMapper;
-using Microsoft.Extensions.Configuration;
-using BCrypt.Net;
 using FigureGear.Service.Helpers;
 
 namespace FigureGear.Service.Implementation
@@ -20,7 +18,13 @@ namespace FigureGear.Service.Implementation
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
 
-        public UserService(FigureGearDbContext dbContext, IMapper mapper, ITokenService tokenService, IConfiguration configuration, IEmailService emailService) : base(dbContext)
+        public UserService(
+            FigureGearDbContext dbContext,
+            IMapper mapper,
+            ITokenService tokenService,
+            IConfiguration configuration,
+            IEmailService emailService
+        ) : base(dbContext)
         {
             _mapper = mapper;
             _tokenService = tokenService;
@@ -28,58 +32,53 @@ namespace FigureGear.Service.Implementation
             _emailService = emailService;
         }
 
-        public async Task<ApiResponse<object>> RegisterAsync(UserModel model)
+        #region Register
+        public async Task<ApiResponse<dynamic>> RegisterAsync(UserModel model)
         {
             var user = _mapper.Map<User>(model)!;
-
             user.Id = Guid.NewGuid();
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
-
-            var userIdEncrypt = Utils.Encrypt(user.Id.ToString());
             var defaultRole = await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == RoleNames.User);
-            if (defaultRole == null) {
-                throw new Exception("Default role not found");
-            }
-            user.UserRoles.Add(new UserRole
+           if (defaultRole == null)
             {
-                UserId = user.Id,
-                RoleId = defaultRole.Id
-            });
+                return ApiResponse<dynamic>.NotFound("default role not found");
+            }
+            user.RoleId = defaultRole.Id;
+
             _dbContext.Users.Add(user);
             await _dbContext.SaveChangesAsync();
 
+            var userIdEncrypt = Utils.Encrypt(user.Id.ToString());
             var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "Email", "ActivationEmailTemplate.html");
             var emailTemplate = await File.ReadAllTextAsync(templatePath);
             emailTemplate = emailTemplate
-                      .Replace("{{logoUrl}}", "https://firebasestorage.googleapis.com/v0/b/sdsd-f6fec.appspot.com/o/images%2FLogo.png?alt=media&token=bd150de3-94be-4c84-b177-0f799f6dd955")
-                      .Replace("{{confirmLink}}", $"{_configuration["AppSettings:ClientUrl"]}/auth/confirm-email?token={userIdEncrypt}")
-                      .Replace("{{currentYear}}", DateTime.Now.Year.ToString());
-            await _emailService.SendEmailAsync(model.Email, "Xác thực tài khoản FigureGear Store", emailTemplate);
+                .Replace("{{logoUrl}}", "https://firebasestorage.googleapis.com/v0/b/sdsd-f6fec.appspot.com/o/images%2FLogo.png?alt=media&token=bd150de3-94be-4c84-b177-0f799f6dd955")
+                .Replace("{{confirmLink}}", $"{_configuration["AppSettings:ClientUrl"]}/auth/confirm-email?token={userIdEncrypt}")
+                .Replace("{{currentYear}}", DateTime.Now.Year.ToString());
 
-            return new ApiResponse<object>
-            {
-                Success = true,
-                Message = "Registered successfully"
-            };
+            await _emailService.SendEmailAsync(user.Email, "Xác thực tài khoản FigureGear Store", emailTemplate);
+
+            return ApiResponse<dynamic>.Created("user registered successfully");
         }
+        #endregion
 
-
-        public async Task<AuthResponse> ConfirmEmailAsync(string token)
+        #region Confirm email
+        public async Task<ApiResponse<dynamic>> ConfirmEmailAsync(string token)
         {
             var userId = Utils.Decrypt(token);
+            var user = _dbContext.Users
+                        .Include(u => u.Role)
+                            .ThenInclude(r => r.RolePermissions)
+                                .ThenInclude(rp => rp.Permission)
+                        .FirstOrDefault(u => u.Id == Guid.Parse(userId));
 
-            var user = await _dbContext.Users.FindAsync(userId);
             if (user == null || user.EmailConfirmed)
             {
-                throw new Exception("the token is invalid.");
-            }
+                return ApiResponse<dynamic>.BadRequest("invalid credentials");
+            } 
 
-            var authClaims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.NameIdentifier, Utils.Encrypt(user.Id.ToString())),
-                    new Claim("SecurityStamp", user.SecurityStamp)
-                };
-
+            var permissions = user.Role?.RolePermissions.Select(rp => rp.Permission.Key).ToList() ?? new List<string>();
+            var authClaims = BuildClaims(user, permissions);
 
             var refreshToken = _tokenService.GenerateRefreshToken();
             var accessToken = _tokenService.GenerateAccessToken(authClaims);
@@ -89,26 +88,72 @@ namespace FigureGear.Service.Implementation
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
 
-            string tokenConcat = $"{accessToken}.{_configuration["JWT:concatString"]}.{refreshToken}";
+            user.UserProfile ??= new UserProfile { UserId = user.Id };
 
             await _dbContext.SaveChangesAsync();
 
-            return new AuthResponse
+            return ApiResponse<dynamic>.Ok("email confirmed successfully", new
             {
-                Token = tokenConcat
-            };
+                Token = $"{accessToken}.{_configuration["JWT:concatString"]}.{refreshToken}"
+            });
+          
         }
+        #endregion
+
+        #region Login
+        public async Task<ApiResponse<dynamic>> LoginAsync(UserModel model)
+        {
+            var user = _dbContext.Users
+                         .Include(u => u.Role)
+                         .ThenInclude(r => r.RolePermissions)
+                         .ThenInclude(rp => rp.Permission)
+                         .FirstOrDefault(u => u.UserName == model.UserName);
+
+            if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
+            {
+                return ApiResponse<dynamic>.BadRequest("invalid username or password");
+            }   
+
+            var permissions = user.Role?.RolePermissions
+                               .Select(rp => rp.Permission.Key)
+                               .Distinct()
+                               .ToList() ?? new List<string>();
+
+            var authClaims = BuildClaims(user, permissions);
+            var refreshToken = _tokenService.GenerateRefreshToken();
+            var accessToken = _tokenService.GenerateAccessToken(authClaims);
+
+            user.LastLoginDate = DateTime.UtcNow;
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+            await _dbContext.SaveChangesAsync();
+
+            return ApiResponse<dynamic>.Ok("logged in successfully", new
+            {
+                Token = $"{accessToken}.{_configuration["JWT:concatString"]}.{refreshToken}"
+            });
+        }
+        #endregion
 
         #region Validators
-        public async Task<bool> IsUserNameExist(string userName)
+        public async Task<bool> IsUserNameExist(string userName) =>
+            await _dbContext.Users.AsNoTracking().AnyAsync(user => user.UserName == userName);
+
+        public async Task<bool> IsEmailExist(string email) =>
+            await _dbContext.Users.AsNoTracking().AnyAsync(user => user.Email == email);
+        #endregion
+
+        #region Helpers
+        private static List<Claim> BuildClaims(User user, List<string> permissions)
         {
-            var userNameExist = await _dbContext.Users.AsNoTracking().AnyAsync(user => user.UserName == userName);
-            return userNameExist;
-        }
-        public async Task<bool> IsEmailExist(string email)
-        {
-            var emailExist = await _dbContext.Users.AsNoTracking().AnyAsync(user => user.Email == email);
-            return emailExist;
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim("SecurityStamp", user.SecurityStamp)
+            };
+            claims.AddRange(permissions.Select(p => new Claim("Permission", p)));
+            return claims;
         }
         #endregion
     }

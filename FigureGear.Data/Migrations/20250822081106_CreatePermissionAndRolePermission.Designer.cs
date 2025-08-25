@@ -4,6 +4,7 @@ using FigureGear.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FigureGear.Data.Migrations
 {
     [DbContext(typeof(FigureGearDbContext))]
-    partial class FigureGearDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250822081106_CreatePermissionAndRolePermission")]
+    partial class CreatePermissionAndRolePermission
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -465,9 +468,6 @@ namespace FigureGear.Data.Migrations
                     b.Property<DateTime?>("RefreshTokenExpiryTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("RoleId")
-                        .HasColumnType("int");
-
                     b.Property<string>("SecurityStamp")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -486,44 +486,25 @@ namespace FigureGear.Data.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.HasIndex("RoleId");
-
                     b.HasIndex("UserName")
                         .IsUnique();
 
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("FigureGear.Data.Domain.UserProfile", b =>
+            modelBuilder.Entity("FigureGear.Data.Domain.UserRole", b =>
                 {
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Address")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
 
-                    b.Property<string>("AvatarUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.HasKey("UserId", "RoleId");
 
-                    b.Property<DateTime?>("DateOfBirth")
-                        .HasColumnType("datetime2");
+                    b.HasIndex("RoleId");
 
-                    b.Property<string>("FullName")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("UserId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("UserProfiles");
+                    b.ToTable("UserRoles");
                 });
 
             modelBuilder.Entity("FigureGear.Data.Domain.Ward", b =>
@@ -703,24 +684,21 @@ namespace FigureGear.Data.Migrations
                     b.Navigation("Ward");
                 });
 
-            modelBuilder.Entity("FigureGear.Data.Domain.User", b =>
+            modelBuilder.Entity("FigureGear.Data.Domain.UserRole", b =>
                 {
                     b.HasOne("FigureGear.Data.Domain.Role", "Role")
-                        .WithMany("Users")
+                        .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FigureGear.Data.Domain.User", "User")
+                        .WithMany("UserRoles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Role");
-                });
-
-            modelBuilder.Entity("FigureGear.Data.Domain.UserProfile", b =>
-                {
-                    b.HasOne("FigureGear.Data.Domain.User", "User")
-                        .WithOne("UserProfile")
-                        .HasForeignKey("FigureGear.Data.Domain.UserProfile", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -777,7 +755,7 @@ namespace FigureGear.Data.Migrations
                 {
                     b.Navigation("RolePermissions");
 
-                    b.Navigation("Users");
+                    b.Navigation("UserRoles");
                 });
 
             modelBuilder.Entity("FigureGear.Data.Domain.Series", b =>
@@ -792,7 +770,7 @@ namespace FigureGear.Data.Migrations
 
             modelBuilder.Entity("FigureGear.Data.Domain.User", b =>
                 {
-                    b.Navigation("UserProfile");
+                    b.Navigation("UserRoles");
                 });
 #pragma warning restore 612, 618
         }

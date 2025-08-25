@@ -17,8 +17,13 @@ namespace FigureGear.Data.Context
 
         public DbSet<Role> Roles { get; set; }
 
-        public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<UserProfile> UserProfiles { get; set; }
 
+        public DbSet<Permission> Permissions { get; set; }
+
+        public DbSet<RolePermission> RolePermissions { get; set; }
+
+        //Continute
         public DbSet<Manufacturer> Manufacturers { get; set; }
 
         public DbSet<Material> Materials { get; set; }
@@ -100,6 +105,11 @@ namespace FigureGear.Data.Context
                 builder.HasIndex(x => x.UserName).IsUnique();
 
                 builder.HasIndex(x => x.Email).IsUnique();
+
+                builder.HasOne(u => u.UserProfile)
+                       .WithOne(p => p.User)
+                       .HasForeignKey<UserProfile>(p => p.UserId)
+                       .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Role>(builder =>
@@ -117,20 +127,64 @@ namespace FigureGear.Data.Context
                 .HasMaxLength(255);
             });
 
-            modelBuilder.Entity<UserRole>(builder =>
+            modelBuilder.Entity<UserProfile>(builder =>
             {
-                builder.HasKey(ur => new { ur.UserId, ur.RoleId });
+                builder.HasKey(x => x.UserId);
 
-                builder.HasOne(ur => ur.User)
-                       .WithMany(u => u.UserRoles)
-                       .HasForeignKey(ur => ur.UserId)
-                       .OnDelete(DeleteBehavior.Restrict); ;
+                builder.Property(x => x.FullName)
+                       .HasMaxLength(50)
+                       .IsRequired(false);
 
+                builder.Property(x => x.DateOfBirth)
+                       .IsRequired(false);
 
-                builder.HasOne(ur => ur.Role)
-                       .WithMany(r => r.UserRoles)
-                       .HasForeignKey(ur => ur.RoleId)
-                       .OnDelete(DeleteBehavior.Restrict); ;
+                builder.Property(x => x.PhoneNumber)
+                       .HasMaxLength(20)
+                       .IsRequired(false);
+
+                builder.Property(x => x.Address)
+                       .HasMaxLength(250)
+                       .IsRequired(false);
+
+                builder.Property(x => x.AvatarUrl)
+                       .HasMaxLength(500)
+                       .IsRequired(false);
+
+                builder.HasOne(p => p.User)
+                       .WithOne(u => u.UserProfile)
+                       .HasForeignKey<UserProfile>(p => p.UserId)
+                       .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasIndex(p => p.UserId).IsUnique();
+            });
+
+            modelBuilder.Entity<RolePermission>(builder =>
+            {
+                builder.HasKey(rp => new { rp.RoleId, rp.PermissionId });
+
+                builder.HasOne(rp => rp.Role)
+                       .WithMany(r => r.RolePermissions)
+                       .HasForeignKey(rp => rp.RoleId);
+
+                builder.HasOne(rp => rp.Permission)
+                       .WithMany(p => p.RolePermissions)
+                       .HasForeignKey(rp => rp.PermissionId);
+            });
+
+            modelBuilder.Entity<Permission>(builder =>
+            {
+                builder.HasKey(p => p.Id);
+
+                builder.Property(p => p.Key)
+                       .IsRequired()
+                       .HasMaxLength(100);
+
+                builder.Property(p => p.Description)
+                       .HasMaxLength(250);
+
+                builder.HasMany(p => p.RolePermissions)
+                       .WithOne(rp => rp.Permission)
+                       .HasForeignKey(rp => rp.PermissionId);
             });
 
             modelBuilder.Entity<Manufacturer>(builder =>
