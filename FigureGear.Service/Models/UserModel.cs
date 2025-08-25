@@ -4,25 +4,25 @@
     {
         public Guid? Id { get; set; }
 
-        public string UserName { get; set; } = string.Empty;
+        public string? UserName { get; set; }
 
-        public string Email { get; set; } = string.Empty;
+        public string? Email { get; set; }
 
-        public string Password { get; set; } = string.Empty;
+        public string? Password { get; set; }
 
-        public string SecurityStamp { get; set; } = Guid.NewGuid().ToString();
+        public string? SecurityStamp { get; set; } = Guid.NewGuid().ToString();
 
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; } = false;
 
         public bool IsDeleted { get; set; } = false;
 
         public bool EmailConfirmed { get; set; } = false;
 
-        public int FailedLoginCount { get; set; } = 0;
+        public int? FailedLoginCount { get; set; }
 
         public DateTime? LockoutEnd { get; set; }
 
-        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public DateTime? CreatedDate { get; set; }
 
         public DateTime? LastLoginDate { get; set; }
 

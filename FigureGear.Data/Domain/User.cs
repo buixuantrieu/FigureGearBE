@@ -8,7 +8,7 @@
 
         public string Email { get; set; } = string.Empty;
 
-        public string SecurityStamp { get; set; } = Guid.NewGuid().ToString();
+        public string? SecurityStamp { get; set; } = Guid.NewGuid().ToString();
 
         public string PasswordHash { get; set; } = string.Empty;
 
@@ -32,6 +32,10 @@
 
         public DateTime? RefreshTokenExpiryTime { get; set; }
 
-        public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+        public int RoleId { get; set; }
+
+        public Role Role { get; set; }
+
+        public UserProfile? UserProfile { get; set; }
     }
 }

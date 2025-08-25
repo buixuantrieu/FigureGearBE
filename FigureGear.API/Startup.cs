@@ -1,10 +1,16 @@
-﻿using Asp.Versioning;
+﻿using System.Text;
+using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
+using eKonect.API.MiddleWares;
 using FigureGear.API.Configurations;
+using FigureGear.API.Middlewares;
 using FigureGear.API.Services.Email;
 using FigureGear.Data.Context;
 using FigureGear.Service.Helpers;
+using FigureGear.Service.Shared;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace FigureGearBE.API
 {
@@ -30,9 +36,59 @@ namespace FigureGearBE.API
                 });
             });
             services.AddAuthorization();
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(Configuration["JWT:Secret"])),
+                    ClockSkew = TimeSpan.Zero
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var token = context.Request.Headers["Authorization"]
+                            .FirstOrDefault()?.Split(" ").Last();
+
+                        if (!string.IsNullOrEmpty(token))
+                        {
+                            try
+                            {
+                                var decrypted = Utils.Decrypt(token);
+                                if (!string.IsNullOrEmpty(decrypted))
+                                {
+                                    context.Token = decrypted;
+                                }
+                                else
+                                {
+                                    context.Token = token;
+                                }
+                            }
+                            catch
+                            {
+                                context.Token = token;
+                            }
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+
             services.AddDbContext<FigureGearDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-
+            services.AddHttpContextAccessor();
             services.RegisterValidators();
             services.RegisterService();
             services.Configure<JWTSettings>(Configuration.GetSection("JWT"));
@@ -69,9 +125,13 @@ namespace FigureGearBE.API
                     }
                 });
             }
-            app.UseCors("AllowAll");
+           
             app.UseRouting();
+            app.UseCors("AllowAll");
+            app.UseAuthentication();
             app.UseAuthorization();
+            app.UseMiddleware<PermissionMiddleware>();
+            app.UseMiddleware<ErrorHandlerMiddleware>();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
