@@ -8,6 +8,7 @@ namespace FigureGear.API.Configurations
     {
         public AutoMapperProfile() {
             CreateMap<UserModel, User>();
+            CreateMap<PermissionModel, Permission>();
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using FigureGear.Service.Models;
 
-namespace FigureGear.Service.Interface
+namespace FigureGear.Service.Interface.UserInterface
 {
     public interface IUserService
     {
@@ -9,11 +9,5 @@ namespace FigureGear.Service.Interface
         Task<ApiResponse<dynamic>> LoginAsync(UserModel model);
 
         Task<ApiResponse<dynamic>> ConfirmEmailAsync(string token);
-
-        #region Validators
-        Task<bool> IsUserNameExist(string userName);
-
-        Task<bool> IsEmailExist(string email);
-        #endregion
     }
 }

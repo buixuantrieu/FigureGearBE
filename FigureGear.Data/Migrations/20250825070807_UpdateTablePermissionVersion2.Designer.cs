@@ -4,6 +4,7 @@ using FigureGear.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FigureGear.Data.Migrations
 {
     [DbContext(typeof(FigureGearDbContext))]
-    partial class FigureGearDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250825070807_UpdateTablePermissionVersion2")]
+    partial class UpdateTablePermissionVersion2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -152,6 +155,9 @@ namespace FigureGear.Data.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Key")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -166,9 +172,6 @@ namespace FigureGear.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedBy");
-
-                    b.HasIndex("Key")
-                        .IsUnique();
 
                     b.HasIndex("UpdatedBy");
 

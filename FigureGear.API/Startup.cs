@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Security.Claims;
+using System.Text;
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using eKonect.API.MiddleWares;
@@ -25,6 +26,7 @@ namespace FigureGearBE.API
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDistributedMemoryCache();
             services.AddControllers();
             services.AddCors(options =>
             {
@@ -51,7 +53,8 @@ namespace FigureGearBE.API
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(Configuration["JWT:Secret"])),
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = TimeSpan.Zero,
+                    NameClaimType = ClaimTypes.NameIdentifier
                 };
 
                 options.Events = new JwtBearerEvents
@@ -109,7 +112,32 @@ namespace FigureGearBE.API
             });
 
             services.AddEndpointsApiExplorer();
-            services.AddSwaggerGen();
+            services.AddSwaggerGen(c =>
+            {
+                c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Description = "Nhập JWT token theo format: Bearer {token}"
+                });
+                c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
@@ -125,7 +153,7 @@ namespace FigureGearBE.API
                     }
                 });
             }
-           
+
             app.UseRouting();
             app.UseCors("AllowAll");
             app.UseAuthentication();

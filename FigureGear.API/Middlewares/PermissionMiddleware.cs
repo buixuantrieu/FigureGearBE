@@ -1,9 +1,7 @@
 ﻿using FigureGear.API.Attributes;
-using FigureGear.Service.Interface;
-using FigureGear.Data.Context;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.AspNetCore.Authorization;
+using FigureGear.Service.Helpers;
+using FigureGear.Service.Interface.UserInterface;
 
 namespace FigureGear.API.Middlewares
 {
@@ -16,7 +14,9 @@ namespace FigureGear.API.Middlewares
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context)
+        public async Task InvokeAsync(HttpContext context,
+                                      ICurrentUserService currentUserService,
+                                      IUserContextService userContextService)
         {
             var endpoint = context.GetEndpoint();
 
@@ -25,11 +25,8 @@ namespace FigureGear.API.Middlewares
                 await _next(context);
                 return;
             }
-            var currentUserService = context.RequestServices.GetRequiredService<ICurrentUserService>();
-            var dbContext = context.RequestServices.GetRequiredService<FigureGearDbContext>();
-            var cache = context.RequestServices.GetService<IDistributedCache>();
 
-            if (!context.User.Identity.IsAuthenticated)
+            if (!context.User.Identity?.IsAuthenticated ?? false)
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync("Unauthorized");
@@ -44,10 +41,26 @@ namespace FigureGear.API.Middlewares
                 return;
             }
 
+            var userInfo = await userContextService.GetUserInfoAsync(userId.Value);
+            if (userInfo is null)
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsync("Forbidden");
+                return;
+            }
+
+            var (roleName, securityStamp) = userInfo.Value;
+
+            if (roleName == RoleNames.Admin)
+            {
+                await _next(context);
+                return;
+            }
+
             var tokenSecurityStamp = context.User.Claims
                 .FirstOrDefault(c => c.Type == "security_stamp")?.Value;
 
-            if (!await IsSecurityStampValidAsync(dbContext, cache, userId.Value, tokenSecurityStamp))
+            if (tokenSecurityStamp != securityStamp)
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync("Unauthorized");
@@ -56,7 +69,7 @@ namespace FigureGear.API.Middlewares
 
             var requiredPermissions = endpoint?.Metadata
                 .GetOrderedMetadata<RequirePermissionAttribute>()
-                .Select(attr => attr.Permission)
+                .SelectMany(attr => attr.Permissions)
                 .ToList();
 
             if (requiredPermissions != null && requiredPermissions.Any())
@@ -66,51 +79,15 @@ namespace FigureGear.API.Middlewares
                     .Select(c => c.Value)
                     .ToHashSet();
 
-                foreach (var permission in requiredPermissions)
+                if (!requiredPermissions.Any(p => userClaims.Contains(p)))
                 {
-                    if (!userClaims.Contains(permission))
-                    {
-                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                        await context.Response.WriteAsync("Forbidden");
-                        return;
-                    }
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    await context.Response.WriteAsync("Forbidden");
+                    return;
                 }
             }
 
             await _next(context);
-        }
-
-        private async Task<bool> IsSecurityStampValidAsync(
-            FigureGearDbContext dbContext,
-            IDistributedCache cache,
-            Guid userId,
-            string tokenSecurityStamp)
-        {
-            if (string.IsNullOrEmpty(tokenSecurityStamp))
-                return false;
-
-            if (cache != null)
-            {
-                var cachedStamp = await cache.GetStringAsync($"SecurityStamp:{userId}");
-                if (cachedStamp != null)
-                    return cachedStamp == tokenSecurityStamp;
-            }
-
-            var userSecurityStamp = await dbContext.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.SecurityStamp)
-                .FirstOrDefaultAsync();
-
-            if (cache != null && userSecurityStamp != null)
-            {
-                await cache.SetStringAsync($"SecurityStamp:{userId}", userSecurityStamp,
-                    new DistributedCacheEntryOptions
-                    {
-                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-                    });
-            }
-
-            return tokenSecurityStamp == userSecurityStamp;
         }
     }
 }

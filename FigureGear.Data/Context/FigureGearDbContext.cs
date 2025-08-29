@@ -179,8 +179,34 @@ namespace FigureGear.Data.Context
                        .IsRequired()
                        .HasMaxLength(100);
 
+                builder.HasIndex(p => p.Key)
+                       .IsUnique();
+
                 builder.Property(p => p.Description)
                        .HasMaxLength(250);
+
+                builder.Property(p => p.CreatedDate)
+                       .IsRequired()
+                       .HasDefaultValueSql("GETDATE()");
+
+                builder.Property(p => p.UpdatedDate)
+                       .IsRequired(false);
+
+                builder.Property(p => p.CreatedBy)
+                       .IsRequired();
+
+                builder.Property(p => p.UpdatedBy)
+                       .IsRequired(false);
+
+                builder.HasOne(p => p.CreatedByUser)
+                       .WithMany()
+                       .HasForeignKey(p => p.CreatedBy)
+                       .OnDelete(DeleteBehavior.Restrict);
+
+                builder.HasOne(p => p.UpdatedByUser)
+                       .WithMany()
+                       .HasForeignKey(p => p.UpdatedBy)
+                       .OnDelete(DeleteBehavior.Restrict);
 
                 builder.HasMany(p => p.RolePermissions)
                        .WithOne(rp => rp.Permission)

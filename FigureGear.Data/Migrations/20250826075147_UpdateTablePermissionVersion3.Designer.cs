@@ -4,6 +4,7 @@ using FigureGear.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FigureGear.Data.Migrations
 {
     [DbContext(typeof(FigureGearDbContext))]
-    partial class FigureGearDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250826075147_UpdateTablePermissionVersion3")]
+    partial class UpdateTablePermissionVersion3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -148,9 +151,18 @@ namespace FigureGear.Data.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
 
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Key")
                         .IsRequired()
@@ -166,6 +178,8 @@ namespace FigureGear.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
 
                     b.HasIndex("Key")
                         .IsUnique();
@@ -589,12 +603,19 @@ namespace FigureGear.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("FigureGear.Data.Domain.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("FigureGear.Data.Domain.User", "UpdatedByUser")
                         .WithMany()
                         .HasForeignKey("UpdatedBy")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeletedByUser");
 
                     b.Navigation("UpdatedByUser");
                 });

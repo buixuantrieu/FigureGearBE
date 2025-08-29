@@ -8,8 +8,9 @@ using FigureGear.Service.Interface;
 using FigureGear.Service.Models;
 using FigureGear.Service.Shared;
 using FigureGear.Service.Helpers;
+using FigureGear.Service.Interface.UserInterface;
 
-namespace FigureGear.Service.Implementation
+namespace FigureGear.Service.Implementation.UserImplementation
 {
     public class UserService : DbContextService, IUserService
     {
@@ -18,13 +19,7 @@ namespace FigureGear.Service.Implementation
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
 
-        public UserService(
-            FigureGearDbContext dbContext,
-            IMapper mapper,
-            ITokenService tokenService,
-            IConfiguration configuration,
-            IEmailService emailService
-        ) : base(dbContext)
+        public UserService(FigureGearDbContext dbContext, IMapper mapper, ITokenService tokenService, IConfiguration configuration, IEmailService emailService) : base(dbContext)
         {
             _mapper = mapper;
             _tokenService = tokenService;
@@ -39,7 +34,7 @@ namespace FigureGear.Service.Implementation
             user.Id = Guid.NewGuid();
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
             var defaultRole = await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == RoleNames.User);
-           if (defaultRole == null)
+            if (defaultRole == null)
             {
                 return ApiResponse<dynamic>.NotFound("default role not found");
             }
@@ -75,9 +70,12 @@ namespace FigureGear.Service.Implementation
             if (user == null || user.EmailConfirmed)
             {
                 return ApiResponse<dynamic>.BadRequest("invalid credentials");
-            } 
+            }
+
+            user.SecurityStamp = Guid.NewGuid().ToString();
 
             var permissions = user.Role?.RolePermissions.Select(rp => rp.Permission.Key).ToList() ?? new List<string>();
+           
             var authClaims = BuildClaims(user, permissions);
 
             var refreshToken = _tokenService.GenerateRefreshToken();
@@ -96,7 +94,7 @@ namespace FigureGear.Service.Implementation
             {
                 Token = $"{accessToken}.{_configuration["JWT:concatString"]}.{refreshToken}"
             });
-          
+
         }
         #endregion
 
@@ -112,12 +110,13 @@ namespace FigureGear.Service.Implementation
             if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
             {
                 return ApiResponse<dynamic>.BadRequest("invalid username or password");
-            }   
+            }
 
             var permissions = user.Role?.RolePermissions
                                .Select(rp => rp.Permission.Key)
                                .Distinct()
                                .ToList() ?? new List<string>();
+            user.SecurityStamp = Guid.NewGuid().ToString();
 
             var authClaims = BuildClaims(user, permissions);
             var refreshToken = _tokenService.GenerateRefreshToken();
@@ -134,14 +133,6 @@ namespace FigureGear.Service.Implementation
                 Token = $"{accessToken}.{_configuration["JWT:concatString"]}.{refreshToken}"
             });
         }
-        #endregion
-
-        #region Validators
-        public async Task<bool> IsUserNameExist(string userName) =>
-            await _dbContext.Users.AsNoTracking().AnyAsync(user => user.UserName == userName);
-
-        public async Task<bool> IsEmailExist(string email) =>
-            await _dbContext.Users.AsNoTracking().AnyAsync(user => user.Email == email);
         #endregion
 
         #region Helpers
