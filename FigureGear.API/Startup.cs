@@ -1,10 +1,19 @@
-﻿using Asp.Versioning;
+﻿using System.Security.Claims;
+using System.Text;
+using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
+using eKonect.API.MiddleWares;
 using FigureGear.API.Configurations;
+using FigureGear.API.Middlewares;
+using FigureGear.API.Services.Email;
 using FigureGear.Data.Context;
+using FigureGear.Service.Helpers;
+using FigureGear.Service.Shared;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
-namespace FigureGearBE
+namespace FigureGearBE.API
 {
     public class Startup
     {
@@ -17,12 +26,78 @@ namespace FigureGearBE
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDistributedMemoryCache();
             services.AddControllers();
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
+            });
             services.AddAuthorization();
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(Configuration["JWT:Secret"])),
+                    ClockSkew = TimeSpan.Zero,
+                    NameClaimType = ClaimTypes.NameIdentifier
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var token = context.Request.Headers["Authorization"]
+                            .FirstOrDefault()?.Split(" ").Last();
+
+                        if (!string.IsNullOrEmpty(token))
+                        {
+                            try
+                            {
+                                var decrypted = Utils.Decrypt(token);
+                                if (!string.IsNullOrEmpty(decrypted))
+                                {
+                                    context.Token = decrypted;
+                                }
+                                else
+                                {
+                                    context.Token = token;
+                                }
+                            }
+                            catch
+                            {
+                                context.Token = token;
+                            }
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+
             services.AddDbContext<FigureGearDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-
+            services.AddHttpContextAccessor();
             services.RegisterValidators();
+            services.RegisterService();
+            services.Configure<JWTSettings>(Configuration.GetSection("JWT"));
+            services.Configure<EmailSettings>(Configuration.GetSection("EmailSettings"));
+
+            services.AddAutoMapper(typeof(AutoMapperProfile));
 
             services.AddApiVersioning(options =>
             {
@@ -37,7 +112,32 @@ namespace FigureGearBE
             });
 
             services.AddEndpointsApiExplorer();
-            services.AddSwaggerGen();
+            services.AddSwaggerGen(c =>
+            {
+                c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Description = "Nhập JWT token theo format: Bearer {token}"
+                });
+                c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
@@ -55,7 +155,11 @@ namespace FigureGearBE
             }
 
             app.UseRouting();
+            app.UseCors("AllowAll");
+            app.UseAuthentication();
             app.UseAuthorization();
+            app.UseMiddleware<PermissionMiddleware>();
+            app.UseMiddleware<ErrorHandlerMiddleware>();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
