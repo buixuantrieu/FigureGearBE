@@ -1,9 +1,13 @@
 ﻿namespace FigureGear.API.Attributes
 {
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
-    public class RequirePermissionAttribute: Attribute
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
+    public class RequirePermissionAttribute : Attribute
     {
-        public string Permission { get; }
-        public RequirePermissionAttribute(string permission) => Permission = permission;
+        public string[] Permissions { get; }
+
+        public RequirePermissionAttribute(params string[] permissions)
+        {
+            Permissions = permissions;
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using AutoMapper;
 using FigureGear.Service.Interface;
+using FigureGear.Service.Interface.UserInterface;
 using FigureGear.Service.Models;
 using FigureGear.Service.Validators;
 using FluentValidation.AspNetCore;

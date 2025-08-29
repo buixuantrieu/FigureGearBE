@@ -7,6 +7,8 @@ namespace FigureGear.API.Configurations
         public static IServiceCollection RegisterValidators(this IServiceCollection services)
         {
             services.AddScoped<UserValidator>();
+            services.AddScoped<PermissionValidator>();
+
             return services;
         }
     }

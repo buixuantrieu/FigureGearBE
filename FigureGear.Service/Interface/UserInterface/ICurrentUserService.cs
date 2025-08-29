@@ -1,4 +1,4 @@
-﻿namespace FigureGear.Service.Interface
+﻿namespace FigureGear.Service.Interface.UserInterface
 {
     public interface ICurrentUserService
     {

@@ -1,5 +1,5 @@
 ﻿using System.Security.Claims;
-using FigureGear.Service.Interface;
+using FigureGear.Service.Interface.UserInterface;
 using FigureGear.Service.Shared;
 using Microsoft.AspNetCore.Http;
 
