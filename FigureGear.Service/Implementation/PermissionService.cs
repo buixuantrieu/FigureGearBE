@@ -15,7 +15,6 @@ namespace FigureGear.Service.Implementation
         private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
 
-    
         public PermissionService(FigureGearDbContext dbContext, IMapper mapper, ICurrentUserService currentUserService) : base(dbContext)
         {
             _mapper = mapper;
@@ -50,34 +49,43 @@ namespace FigureGear.Service.Implementation
             return isNew ? ApiResponse<dynamic>.Created(message, permission) : ApiResponse<dynamic>.Ok(message, permission);
         }
 
-        public async Task<ApiResponse<dynamic>> GetPermissions(PagedFilterRequest request)
+        public async Task<ApiResponse<dynamic>> GetPermissions(PagedFilterRequest filter)
         {
-            var result = await _dbContext.Permissions.ApplyAdvancedFilterAsync(request);
+            var permissions = await _dbContext.Permissions.ApplyAdvancedFilterAsync(filter);
 
-            return ApiResponse<dynamic>.Ok("get permissions successfully", result);
+            return ApiResponse<dynamic>.Ok("get permissions successfully", permissions);
         }
 
         public async Task<ApiResponse<dynamic>> GetPermission(int id)
         {
-            var permission = await _dbContext.Permissions.AsNoTracking()
-                                                         .FirstOrDefaultAsync(p=> p.Id == id);
+            var permission = await _dbContext.Permissions.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
 
             if (permission == null)
-            {
                 return ApiResponse<dynamic>.NotFound("permission not found");
-            }
 
             return ApiResponse<dynamic>.Ok("get permission successfully", permission);
         }
 
         public async Task<ApiResponse<dynamic>> DeletePermission(int id)
         {
-            var affected = await _dbContext.Permissions.Where(p => p.Id == id).ExecuteDeleteAsync();
+            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                await _dbContext.RolePermissions.Where(rp => rp.PermissionId == id).ExecuteDeleteAsync();
+                var affected = await _dbContext.Permissions.Where(p => p.Id == id).ExecuteDeleteAsync();
 
-            if (affected == 0)
-                return ApiResponse<dynamic>.NotFound("permission not found");
+                if (affected == 0)
+                    return ApiResponse<dynamic>.NotFound("permission not found");
 
-            return ApiResponse<dynamic>.Ok("permission deleted successfully");
+                await transaction.CommitAsync();
+
+                return ApiResponse<dynamic>.Ok("permission deleted successfully");
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<ApiResponse<dynamic>> DeletePermissions(List<int> ids)

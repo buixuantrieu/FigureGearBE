@@ -9,5 +9,7 @@ namespace FigureGear.Service.Interface.UserInterface
         Task<ApiResponse<dynamic>> LoginAsync(UserModel model);
 
         Task<ApiResponse<dynamic>> ConfirmEmailAsync(string token);
+
+        Task<ApiResponse<dynamic>> GetUserInfo();
     }
 }

@@ -7,7 +7,7 @@ namespace FigureGear.Service.Interface
     {
         Task<ApiResponse<dynamic>> AddOrUpdatePermission(PermissionModel model);
 
-        Task<ApiResponse<dynamic>> GetPermissions(PagedFilterRequest request);
+        Task<ApiResponse<dynamic>> GetPermissions(PagedFilterRequest filter);
 
         Task<ApiResponse<dynamic>> GetPermission(int id);
 
