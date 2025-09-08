@@ -18,13 +18,15 @@ namespace FigureGear.Service.Implementation.UserImplementation
         private readonly ITokenService _tokenService;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
+        private readonly ICurrentUserService _currentUserService;
 
-        public UserService(FigureGearDbContext dbContext, IMapper mapper, ITokenService tokenService, IConfiguration configuration, IEmailService emailService) : base(dbContext)
+        public UserService(FigureGearDbContext dbContext, IMapper mapper, ITokenService tokenService, IConfiguration configuration, IEmailService emailService, ICurrentUserService currentUserService) : base(dbContext)
         {
             _mapper = mapper;
             _tokenService = tokenService;
             _configuration = configuration;
             _emailService = emailService;
+            _currentUserService = currentUserService;
         }
 
         #region Register
@@ -75,7 +77,7 @@ namespace FigureGear.Service.Implementation.UserImplementation
             user.SecurityStamp = Guid.NewGuid().ToString();
 
             var permissions = user.Role?.RolePermissions.Select(rp => rp.Permission.Key).ToList() ?? new List<string>();
-           
+
             var authClaims = BuildClaims(user, permissions);
 
             var refreshToken = _tokenService.GenerateRefreshToken();
@@ -109,7 +111,12 @@ namespace FigureGear.Service.Implementation.UserImplementation
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
             {
-                return ApiResponse<dynamic>.BadRequest("invalid username or password");
+                return ApiResponse<dynamic>.BadRequest("wrong username or password");
+            }
+
+            if (!user.EmailConfirmed)
+            {
+                return ApiResponse<dynamic>.BadRequest("account email not verified");
             }
 
             var permissions = user.Role?.RolePermissions
@@ -135,6 +142,32 @@ namespace FigureGear.Service.Implementation.UserImplementation
         }
         #endregion
 
+        #region Get user info
+        public async Task<ApiResponse<dynamic>> GetUserInfo()
+        {
+            var currentUserId = _currentUserService.UserId!.Value;
+            var user = await _dbContext.Users.Include(u => u.UserProfile)
+                                             .Where(u => u.Id == currentUserId)
+                                             .Select(u => new
+                                             {
+                                                 email = u.Email,
+                                                 userName = u.UserName,
+                                                 avatar = u.UserProfile.AvatarUrl,
+                                                 address = u.UserProfile.Address,
+                                                 dateOfBirth = u.UserProfile.DateOfBirth,
+                                                 phoneNumber = u.UserProfile.PhoneNumber,
+                                                 fullName = u.UserProfile.FullName
+                                             }).SingleOrDefaultAsync();
+
+            if (user == null)
+            {
+                return ApiResponse<dynamic>.NotFound("User not found");
+            }
+
+            return ApiResponse<dynamic>.Ok("Get user info successfully", user);
+        }
+        #endregion
+
         #region Helpers
         private static List<Claim> BuildClaims(User user, List<string> permissions)
         {
@@ -146,6 +179,7 @@ namespace FigureGear.Service.Implementation.UserImplementation
             claims.AddRange(permissions.Select(p => new Claim("Permission", p)));
             return claims;
         }
+
         #endregion
     }
 }

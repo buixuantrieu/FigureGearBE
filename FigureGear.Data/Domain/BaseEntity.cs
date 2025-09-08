@@ -4,7 +4,7 @@
     {
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
-        public Guid CreatedBy { get; set; }
+        public Guid? CreatedBy { get; set; }
 
         public DateTime? UpdatedDate { get; set; }
 

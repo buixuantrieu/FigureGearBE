@@ -23,7 +23,6 @@ namespace FigureGear.Data.Context
 
         public DbSet<RolePermission> RolePermissions { get; set; }
 
-        //Continute
         public DbSet<Manufacturer> Manufacturers { get; set; }
 
         public DbSet<Material> Materials { get; set; }
@@ -123,8 +122,37 @@ namespace FigureGear.Data.Context
                 .IsRequired()
                 .HasMaxLength(50);
 
+                builder.HasIndex(x => x.Name).IsUnique();
+
                 builder.Property(x => x.Description)
                 .HasMaxLength(255);
+
+                builder.Property(x => x.IsActive)
+                       .IsRequired()
+                       .HasDefaultValue(true);
+
+                builder.Property(p => p.CreatedDate)
+                       .IsRequired()
+                       .HasDefaultValueSql("GETDATE()");
+
+                builder.Property(p => p.UpdatedDate)
+                       .IsRequired(false);
+
+                builder.Property(p => p.CreatedBy)
+                       .IsRequired(false);
+
+                builder.Property(p => p.UpdatedBy)
+                       .IsRequired(false);
+
+                builder.HasOne(p => p.CreatedByUser)
+                       .WithMany()
+                       .HasForeignKey(p => p.CreatedBy)
+                       .OnDelete(DeleteBehavior.Restrict);
+
+                builder.HasOne(p => p.UpdatedByUser)
+                       .WithMany()
+                       .HasForeignKey(p => p.UpdatedBy)
+                       .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<UserProfile>(builder =>

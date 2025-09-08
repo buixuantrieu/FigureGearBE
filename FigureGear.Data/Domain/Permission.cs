@@ -8,7 +8,6 @@
 
         public string? Description { get; set; }
 
-
         public User CreatedByUser { get; set; }
 
         public User? UpdatedByUser { get; set; }

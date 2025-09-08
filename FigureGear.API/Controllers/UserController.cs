@@ -26,7 +26,7 @@ namespace FigureGear.API.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("register")]
+        [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] UserModel model)
         {
             var validationResult = await _userValidator.ValidateAsync(model);
@@ -43,7 +43,7 @@ namespace FigureGear.API.Controllers
         }
 
         [AllowAnonymous]
-        [HttpGet("confirm-email")]
+        [HttpGet("Confirm-email")]
         public async Task<IActionResult> ConfirmEmail([FromQuery] string token)
         {
             if (string.IsNullOrEmpty(token))
@@ -57,12 +57,20 @@ namespace FigureGear.API.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("login")]
+        [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] UserModel model)
         {
             var response = await _userService.LoginAsync(model);
 
             return StatusCode(response.StatusCode, response);
+        }
+
+        [Authorize]
+        [HttpGet("/User-info")]
+        public async Task<IActionResult> GetUserInfo()
+        {
+            var result = await _userService.GetUserInfo();
+            return Ok(result);
         }
     }
 }
